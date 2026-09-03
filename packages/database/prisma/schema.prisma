@@ -1,0 +1,99 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  viewer
+  editor
+  super_admin
+}
+
+model User {
+  id            String             @id @default(uuid())
+  email         String             @unique
+  name          String?
+  role          UserRole           @default(user)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  natalProfiles NatalProfile[]
+  audits        AdminAudit[]
+
+  @@index([email])
+}
+
+model Account {
+  id         String   @id @default(uuid())
+  userId     String
+  providerId String   @default("google")
+  accountId  String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model NatalProfile {
+  id           String             @id @default(uuid())
+  userId       String
+  name         String
+  birthDate    DateTime
+  birthTime    String
+  latitude     Float
+  longitude    Float
+  timezone     String
+  city         String
+  country      String
+  createdAt    DateTime           @default(now())
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calculations ChartCalculation[]
+
+  @@index([userId])
+}
+
+model ChartCalculation {
+  id                 String       @id @default(uuid())
+  profileId          String
+  planetaryPositions Json
+  houseCusps         Json
+  planetaryAspects   Json
+  ascendantSign      String
+  calculatedAt       DateTime     @default(now())
+  profile            NatalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId])
+}
+
+model AdminAudit {
+  id         String   @id @default(uuid())
+  actorId    String
+  action     String
+  entityType String
+  entityId   String
+  payload    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+  actor      User     @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([actorId])
+  @@index([createdAt])
+}

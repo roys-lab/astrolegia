@@ -1,0 +1,45 @@
+# Reglas de Operación y Desarrollo para Agentes en Astrolegia (.AGENTS)
+
+Este documento establece las reglas obligatorias e inmutables para cualquier agente o desarrollador que opere en el proyecto **Astrolegia**. El incumplimiento de cualquiera de estas directivas se considerará un error de arquitectura.
+
+---
+
+## 1. Componentes Compartidos de React (`packages/ui` / `@astrolegia/ui`)
+- Todos los componentes base de interfaz de usuario (botones, campos de texto, selectores, modales, tarjetas, tablas, badges y glifos/iconos) **deben crearse y mantenerse centralizados en el paquete `packages/ui` (`@astrolegia/ui`)**.
+- Tanto el frontend del cliente (`apps/client`) como el de administración (`apps/admin`) **deben consumir estos componentes importándolos como una librería** (ej. `import { Button, Input, Card } from '@astrolegia/ui'`).
+- Está estrictamente prohibido reinventar o duplicar componentes primitivos directamente en las carpetas de las aplicaciones.
+
+---
+
+## 2. Prohibición Absoluta de Estilos Inline (*Inline Styles*)
+- **Está terminantemente prohibido el uso de estilos inline** en elementos o componentes JSX/TSX (es decir, el uso de la propiedad `style={{ ... }}` está vetado).
+- Todo estilizado debe realizarse mediante:
+  1. Clases utilitarias de CSS / Tailwind definidas en las hojas de estilo de cada frontend.
+  2. Archivos CSS desacoplados (`.css`) configurados de manera independiente en cada aplicación (`apps/client` y `apps/admin`).
+  3. Propiedades de variante semántica (`variant="primary"`, `size="md"`, etc.) expuestas por los componentes del Design System.
+
+---
+
+## 3. Uso Exclusivo de Iconos SVG (Prohibición Total de Iconos ASCII)
+- **Queda terminantemente prohibido utilizar caracteres o símbolos ASCII para representar iconos**, estados o acciones interactivas.
+  - Ejemplos prohibidos: `->`, `<-`, `[x]`, `(v)`, `*`, `+`, `x`, `v`, `^`, `o`, `|`.
+- Todos los iconos, indicadores y símbolos deben ser **componentes vectoriales SVG nativos** (exportados desde `@astrolegia/ui` o provistos por librerías SVG como `lucide-react`).
+- Cada icono debe renderizarse mediante su etiqueta `<svg>` correspondiente con atributos de accesibilidad y escalabilidad.
+
+---
+
+## 4. Fuente de la Verdad y Uso de `localStorage`
+- **PostgreSQL es la ÚNICA fuente de la verdad del sistema:**
+  - `localStorage` es **únicamente un mecanismo ágil de soporte temporal / caché** para el frontend.
+  - Ningún dato se considera persistido o válido si no ha sido procesado y almacenado en la base de datos PostgreSQL mediante llamadas a la API backend.
+  - Toda lectura inicial, creación o modificación de datos debe sincronizarse obligatoriamente mediante peticiones HTTP (REST) a la API backend.
+- **Coincidencia Exacta de Nombres de Variables:**
+  - Las variables y propiedades utilizadas en el estado local, en `localStorage` y en los contratos de la API **deben coincidir con total exactitud con los nombres de campos del esquema de Prisma** (`packages/database/prisma/schema.prisma`).
+  - Ejemplo: si en Prisma el campo se llama `createdAt`, `userId` o `email`, bajo ninguna circunstancia se renombrará en frontend a `created_at`, `user_id` o `userEmail`.
+
+---
+
+## 5. Arquitectura de Servicios y Backend
+- Solo existe una **única API backend** (`apps/api`). No se deben crear servicios backend paralelos.
+- No existe almacenamiento persistente en buckets (S3 / Railway Storage). La descarga de documentos (como PDFs de cartas astrales) se genera dinámicamente en tiempo de ejecución (runtime) en memoria y se sirve mediante streaming HTTP directo.
+- Se debe garantizar siempre la compatibilidad multiversión de la API (soporte simultáneo para la versión en producción y la versión en revisión en tiendas de apps).

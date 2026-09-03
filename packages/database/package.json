@@ -1,0 +1,31 @@
+{
+  "name": "@astrolegia/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "generate": "prisma generate",
+    "push": "prisma db push",
+    "migrate": "prisma migrate dev",
+    "seed": "tsx prisma/seed.ts",
+    "clean": "rimraf dist"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.1"
+  },
+  "devDependencies": {
+    "@astrolegia/tsconfig": "workspace:*",
+    "@types/node": "^22.13.5",
+    "dotenv": "^16.4.7",
+    "prisma": "^6.4.1",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.6",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

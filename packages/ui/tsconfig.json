@@ -1,0 +1,7 @@
+{
+  "extends": "@astrolegia/tsconfig/react.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"]
+}

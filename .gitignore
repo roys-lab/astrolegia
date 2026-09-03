@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+
+# Production & package build outputs (root and nested)
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+.next/
+**/.next/
+web-build/
+**/web-build/
+
+# Turborepo & Cache
+.turbo/
+**/.turbo/
+.cache/
+**/.cache/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Expo & React Native
+.expo/
+**/.expo/
+android/
+ios/
+apps/client/android/
+apps/client/ios/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+!.env.example
+!**/.env.example
+
+# Test & Coverage
+coverage/
+**/coverage/
+*.lcov
+
+# IDE & OS Files
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -1,0 +1,19 @@
+{
+  "name": "astrolegia",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.5.2",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean",
+    "db:generate": "pnpm --filter @astrolegia/database generate",
+    "db:push": "pnpm --filter @astrolegia/database push",
+    "db:seed": "pnpm --filter @astrolegia/database seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.4.4",
+    "typescript": "^5.7.3"
+  }
+}

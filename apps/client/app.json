@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Astrolegia",
+    "slug": "astrolegia",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0D1117"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.royslab.astrolegia"
+    },
+    "android": {
+      "package": "com.royslab.astrolegia",
+      "adaptiveIcon": {
+        "backgroundColor": "#0D1117"
+      }
+    },
+    "scheme": "astrolegia"
+  }
+}
