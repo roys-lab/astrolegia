@@ -1,0 +1,30 @@
+{
+  "name": "@astrolegia/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Motores puros de Astrolegia: efemérides y favorabilidad, geometría de la rueda zodiacal, numerología (Hitchcock) y modelo de personas. Sin React, sin Next, sin Firebase: corre igual en la API, en Expo y en la web.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./astrology": "./src/astrology/index.ts",
+    "./numerology": "./src/numerology/index.ts",
+    "./people": "./src/people/index.ts",
+    "./types": "./src/types/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "astronomy-engine": "^2.1.19"
+  },
+  "devDependencies": {
+    "@astrolegia/tsconfig": "workspace:*",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.10"
+  }
+}

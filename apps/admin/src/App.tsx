@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button,
   Input,
@@ -21,36 +21,52 @@ import {
   GoogleIcon,
   LogOutIcon,
 } from '@astrolegia/ui';
-import type { UserDTO, UserRole } from '@astrolegia/contracts';
+import { ADMIN_ROLES, type UserDTO, type UserRole } from '@astrolegia/contracts';
+import { API_BASE_URL, apiFetch, authClient, signInWithGoogle, signOut } from './auth';
 
-const API_BASE_URL = 'http://localhost:3000';
+// localStorage es solo caché de soporte (.AGENTS §4): la verdad es PostgreSQL vía la API.
 const LOCAL_STORAGE_USERS_KEY = 'astrolegia_cached_users';
-const LOCAL_STORAGE_AUTH_KEY = 'astrolegia_admin_auth_user';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState<UserDTO | null>(null);
+  const { data: session, isPending } = authClient.useSession();
+  const sessionUser = session?.user ?? null;
+  const role = (sessionUser?.role ?? 'user') as UserRole;
+  const isAdmin = !!sessionUser && ADMIN_ROLES.includes(role);
+
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<UserRole>('viewer');
+  const [newRole, setNewRole] = useState<UserRole>('viewer');
   const [users, setUsers] = useState<UserDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // 1. Cargar sesión de usuario autenticado
-  useEffect(() => {
+  // Sincronización con PostgreSQL (la API valida sesión y rol en cada petición)
+  const fetchUsersFromDatabase = useCallback(async () => {
+    setLoading(true);
     try {
-      const savedAuth = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
-      if (savedAuth) {
-        setCurrentUser(JSON.parse(savedAuth));
+      const response = await apiFetch('/v1/admin/users');
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error?.message || `La API respondió ${response.status}`);
       }
-    } catch (e) {
-      console.warn('Error leyendo autenticación guardada:', e);
+      const json = await response.json();
+      const freshUsers: UserDTO[] = json.data;
+
+      setUsers(freshUsers);
+      localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(freshUsers));
+    } catch (err: any) {
+      console.error('Fallo en sincronización con la base de datos:', err);
+      setFeedback({
+        type: 'error',
+        message: err?.message || `No se pudo sincronizar con la API en ${API_BASE_URL}. Verifica que el servidor esté activo.`,
+      });
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  // 2. Sincronización con base de datos PostgreSQL
   useEffect(() => {
-    if (!currentUser) return;
+    if (!isAdmin) return;
 
     try {
       const cached = localStorage.getItem(LOCAL_STORAGE_USERS_KEY);
@@ -62,51 +78,12 @@ export default function App() {
     }
 
     fetchUsersFromDatabase();
-  }, [currentUser]);
+  }, [isAdmin, fetchUsersFromDatabase]);
 
-  const fetchUsersFromDatabase = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/v1/admin/users`);
-      if (!response.ok) {
-        throw new Error('Error al conectar con la API backend en el puerto 3000');
-      }
-      const json = await response.json();
-      const freshUsers: UserDTO[] = json.data;
-
-      setUsers(freshUsers);
-      localStorage.setItem(LOCAL_STORAGE_USERS_KEY, JSON.stringify(freshUsers));
-    } catch (err: any) {
-      console.error('Fallo en sincronización con la base de datos:', err);
-      setFeedback({
-        type: 'error',
-        message: 'No se pudo sincronizar con la API en http://localhost:3000. Verifica que el servidor esté activo.',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Flow de Single Sign-On con Google (Modo Bypass temporal)
-  const handleGoogleLoginBypass = () => {
-    const bypassUser: UserDTO = {
-      id: 'admin_google_sso_bypass',
-      email: 'roy@royslab.com',
-      name: 'Roy Magariños',
-      role: 'super_admin',
-      createdAt: new Date().toISOString(),
-    };
-    setCurrentUser(bypassUser);
-    localStorage.setItem(LOCAL_STORAGE_AUTH_KEY, JSON.stringify(bypassUser));
-    setFeedback({
-      type: 'success',
-      message: 'Inicio de sesión simulado exitoso (Bypass activo para roy@royslab.com).',
-    });
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
+  const handleLogout = async () => {
+    await signOut();
+    setUsers([]);
+    setFeedback(null);
   };
 
   const handleAssignRole = async (e: React.FormEvent) => {
@@ -120,10 +97,10 @@ export default function App() {
     setFeedback(null);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/v1/admin/users/assign-role`, {
+      const response = await apiFetch('/v1/admin/users/assign-role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), role }),
+        body: JSON.stringify({ email: email.trim().toLowerCase(), role: newRole }),
       });
 
       const result = await response.json();
@@ -134,7 +111,7 @@ export default function App() {
 
       setFeedback({
         type: 'success',
-        message: `Rol ${role} asignado y guardado en PostgreSQL para ${email}`,
+        message: `Rol ${newRole} asignado y guardado en PostgreSQL para ${email}`,
       });
       setEmail('');
       await fetchUsersFromDatabase();
@@ -146,8 +123,17 @@ export default function App() {
     }
   };
 
+  // Resolviendo la sesión con la API
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 text-sm">
+        <RefreshCwIcon size={18} className="animate-spin mr-2" /> Verificando sesión…
+      </div>
+    );
+  }
+
   // Pantalla de Inicio de Sesión SSO si no está autenticado
-  if (!currentUser) {
+  if (!sessionUser) {
     return (
       <div className="min-h-screen bg-slate-950 p-6 flex flex-col items-center justify-center">
         <div className="w-full max-w-md space-y-6">
@@ -170,13 +156,24 @@ export default function App() {
                   <span>Autenticación Centralizada Google SSO</span>
                 </div>
                 <p className="text-xs text-slate-400">
-                  Modo Bypass habilitado: haz clic para acceder directamente mientras configuras las secrets de Google Cloud.
+                  La sesión la emite la API (Better Auth) y el rol se verifica en PostgreSQL. Solo entran los correos con rol administrativo.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={handleGoogleLoginBypass}
+                onClick={async () => {
+                  // El cliente de Better Auth devuelve { data, error } en vez de lanzar
+                  const result = await signInWithGoogle();
+                  if (result.error) {
+                    setFeedback({
+                      type: 'error',
+                      message: result.error.status === 404
+                        ? 'El login con Google no está configurado en la API (faltan GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET).'
+                        : result.error.message || 'No se pudo iniciar sesión con Google.',
+                    });
+                  }
+                }}
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-slate-800 hover:bg-slate-100 rounded-xl font-medium text-sm transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <GoogleIcon size={20} />
@@ -189,10 +186,35 @@ export default function App() {
     );
   }
 
+  // Autenticado pero sin rol administrativo (doc 03: 403)
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-950 p-6 flex flex-col items-center justify-center">
+        <div className="w-full max-w-md space-y-6">
+          <Card title="Sin acceso" description="Tu cuenta de Google no tiene un rol administrativo asignado.">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-2 rounded-lg text-xs">
+                <UserIcon size={14} className="text-indigo-400" />
+                <span className="text-slate-200 font-medium">{sessionUser.email}</span>
+                <Badge variant="user" className="text-[10px]">{role}</Badge>
+              </div>
+              <p className="text-xs text-slate-400">
+                Pedile a un super admin que te asigne el rol viewer, editor o super_admin y volvé a entrar.
+              </p>
+              <Button variant="outline" size="sm" icon={<LogOutIcon size={16} />} onClick={handleLogout}>
+                Salir
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 p-6 md:p-10 flex flex-col items-center">
       <div className="w-full max-w-5xl space-y-8">
-        
+
         {/* Cabecera del Panel */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
           <div className="flex items-center gap-3">
@@ -201,7 +223,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight text-white">Astrolegia — Administración</h1>
-              <p className="text-sm text-slate-400">Control operativo y gestión de roles en PostgreSQL (:3000)</p>
+              <p className="text-sm text-slate-400">Control operativo y gestión de roles en PostgreSQL ({API_BASE_URL})</p>
             </div>
           </div>
 
@@ -209,9 +231,9 @@ export default function App() {
             {/* Usuario autenticado */}
             <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-lg text-xs">
               <UserIcon size={14} className="text-indigo-400" />
-              <span className="text-slate-200 font-medium">{currentUser.email}</span>
-              <Badge variant="super_admin" className="text-[10px]">
-                {currentUser.role}
+              <span className="text-slate-200 font-medium">{sessionUser.email}</span>
+              <Badge variant={role} className="text-[10px]">
+                {role}
               </Badge>
             </div>
 
@@ -268,12 +290,12 @@ export default function App() {
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Formulario de Asignación de Roles */}
+
+          {/* Formulario de Asignación de Roles (solo super_admin en la API) */}
           <div className="lg:col-span-1">
             <Card
               title="Asignar Rol a Usuario"
-              description="Ingresa el correo del operador o consultante para registrarlo o actualizarlo en la base de datos PostgreSQL."
+              description="Ingresa el correo del operador o consultante para registrarlo o actualizarlo en la base de datos PostgreSQL. Requiere rol super_admin."
             >
               <form onSubmit={handleAssignRole} className="space-y-4">
                 <Input
@@ -288,8 +310,8 @@ export default function App() {
 
                 <Select
                   label="Rol Asignado"
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as UserRole)}
+                  value={newRole}
+                  onChange={(e) => setNewRole(e.target.value as UserRole)}
                   options={[
                     { value: 'viewer', label: 'Viewer (Solo Lectura)' },
                     { value: 'editor', label: 'Editor (Contenidos & Orbes)' },
@@ -303,6 +325,7 @@ export default function App() {
                   variant="primary"
                   className="w-full mt-2"
                   loading={submitting}
+                  disabled={role !== 'super_admin'}
                   icon={<PlusIcon size={18} />}
                 >
                   Guardar en Base de Datos
@@ -347,7 +370,7 @@ export default function App() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={u.role as any} icon={<ShieldIcon size={12} />}>
+                          <Badge variant={u.role} icon={<ShieldIcon size={12} />}>
                             {u.role}
                           </Badge>
                         </TableCell>

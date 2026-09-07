@@ -1,7 +1,14 @@
 {
   "extends": "@astrolegia/tsconfig/node.json",
   "compilerOptions": {
-    "outDir": "./dist"
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "types": ["node"],
+    // La API no publica tipos: sin esto, tsc exige que los routers exportados
+    // "nombren" tipos internos de Express (TS2742) bajo el node_modules de pnpm.
+    "declaration": false,
+    "declarationMap": false
   },
   "include": ["src/**/*"]
 }

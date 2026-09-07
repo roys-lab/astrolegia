@@ -7,6 +7,15 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// =====================================================================
+// IDENTIDAD — Better Auth (docs 07 y 08) + rol de administración
+//
+// User, Session, Account y Verification siguen el esquema base de Better
+// Auth (nombres de modelo y de campo tal cual los espera el adapter de
+// Prisma). `role` es el campo adicional de Astrolegia para el RBAC de
+// /v1/admin/*. Los ids los genera la base (uuid) — ver packages/auth.
+// =====================================================================
+
 enum UserRole {
   user
   viewer
@@ -15,12 +24,14 @@ enum UserRole {
 }
 
 model User {
-  id            String             @id @default(uuid())
-  email         String             @unique
-  name          String?
-  role          UserRole           @default(user)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id            String         @id @default(uuid())
+  email         String         @unique
+  name          String
+  emailVerified Boolean        @default(false)
+  image         String?
+  role          UserRole       @default(user)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   accounts      Account[]
   sessions      Session[]
   natalProfiles NatalProfile[]
@@ -29,59 +40,134 @@ model User {
   @@index([email])
 }
 
-model Account {
-  id         String   @id @default(uuid())
-  userId     String
-  providerId String   @default("google")
-  accountId  String
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([providerId, accountId])
-}
-
 model Session {
   id        String   @id @default(uuid())
   userId    String
   token     String   @unique
   expiresAt DateTime
   ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@index([token])
 }
 
+model Account {
+  id                    String    @id @default(uuid())
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// =====================================================================
+// DOMINIO ASTROLÓGICO
+//
+// NatalProfile = una persona con datos de nacimiento: la del propio usuario
+// (isSelf) o su gente. Es el equivalente de `Person` en Astrolegia v1.
+// ChartCalculation = una carta calculada y cacheada por perfil y tipo, con el
+// patrón engineVersion/inputHash de v1: si cambia el motor o los datos de
+// nacimiento, el hash deja de coincidir y hay que recalcular.
+// =====================================================================
+
+enum NatalProfileSource {
+  /// Cargada a mano en la app.
+  manual
+  /// Migrada desde Astrolegia v1 (Firestore); el origen queda en legacyRefs.
+  imported
+}
+
 model NatalProfile {
-  id           String             @id @default(uuid())
-  userId       String
-  name         String
-  birthDate    DateTime
-  birthTime    String
-  latitude     Float
-  longitude    Float
-  timezone     String
-  city         String
-  country      String
-  createdAt    DateTime           @default(now())
-  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  calculations ChartCalculation[]
+  id             String             @id @default(uuid())
+  userId         String
+  name           String
+  /// Solo la fecha, sin hora ni zona horaria. La API la serializa como YYYY-MM-DD.
+  birthDate      DateTime           @db.Date
+  /// "HH:MM" en hora local del lugar de nacimiento; null cuando no se conoce.
+  birthTime      String?
+  /// false => cartas sin casas ni ascendente confiables (se calcula con 12:00).
+  birthTimeKnown Boolean            @default(false)
+  city           String?
+  country        String?
+  latitude       Float?
+  longitude      Float?
+  /// Zona IANA, p. ej. America/Argentina/Buenos_Aires.
+  timezone       String?
+  tags           String[]           @default([])
+  notes          String?
+  /// El perfil que representa al propio usuario. La API garantiza uno por usuario.
+  isSelf         Boolean            @default(false)
+  source         NatalProfileSource @default(manual)
+  /// Referencias a los documentos de origen cuando source = imported.
+  legacyRefs     Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calculations   ChartCalculation[]
 
   @@index([userId])
+  @@index([userId, name])
+}
+
+enum ChartType {
+  natal
+  numerology
+  humanDesign
+  mayanKin
 }
 
 model ChartCalculation {
   id                 String       @id @default(uuid())
   profileId          String
-  planetaryPositions Json
-  houseCusps         Json
-  planetaryAspects   Json
-  ascendantSign      String
+  type               ChartType    @default(natal)
+  /// Versión del motor que calculó (p. ej. kerykeion-api-v5/pipeline-2, hitchcock-1).
+  engineVersion      String
+  /// djb2 de los datos de nacimiento usados en el cálculo (ver @astrolegia/core/people).
+  inputHash          String
+  /// Respuesta completa del motor. Para natal: { chart: <svg>, chart_data: { subject, aspects, … } }.
+  payload            Json
+  /// Derivados de payload para consultas (solo natal). Opcionales.
+  planetaryPositions Json?
+  houseCusps         Json?
+  planetaryAspects   Json?
+  ascendantSign      String?
   calculatedAt       DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
   profile            NatalProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
+  @@unique([profileId, type])
   @@index([profileId])
 }
+
+// =====================================================================
+// OPERACIÓN Y AUDITORÍA
+// =====================================================================
 
 model AdminAudit {
   id         String   @id @default(uuid())

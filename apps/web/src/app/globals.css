@@ -1,0 +1,520 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Cosmic Luxury Palette - Pro Max */
+  --bg-deep: #03030b;
+  /* Pure Void */
+  --bg-nebula: #0a0a1f;
+
+  --glass-base: rgba(10, 10, 20, 0.6);
+  /* Darker, more opaque glass */
+  --glass-border: rgba(255, 255, 255, 0.12);
+  /* Sharper edge */
+  --glass-highlight: rgba(255, 255, 255, 0.08);
+
+  --accent-primary: #d900ff;
+  /* Electric Magenta */
+  --accent-secondary: #0088ff;
+  /* Azure Radiance */
+  --accent-tertiary: #ff0055;
+  /* Radical Red */
+  --accent-gold: #ffd700;
+  /* Starlight Gold */
+  --accent-danger: #ff0055;
+  /* Semantic alias of Radical Red for destructive states */
+
+  /* RGB channel variants — consumed by Tailwind as rgb(var(--x-rgb) / <alpha-value>)
+     so utilities like bg-accent-primary/50 support opacity modifiers. */
+  --accent-primary-rgb: 217 0 255;
+  --accent-secondary-rgb: 0 136 255;
+  --accent-tertiary-rgb: 255 0 85;
+  --accent-gold-rgb: 255 215 0;
+  --accent-danger-rgb: 255 0 85;
+  --bg-deep-rgb: 3 3 11;
+  --bg-nebula-rgb: 10 10 31;
+
+  --text-primary: #ffffff;
+  --text-secondary: #a2a8d3;
+  /* Soft cosmic blue-grey */
+  --text-muted: #62668b;
+
+  --gradient-aurora: linear-gradient(135deg, #d900ff 0%, #7209b7 50%, #0088ff 100%);
+  --gradient-glass: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.00) 100%);
+
+  --shadow-neon: 0 0 20px rgba(217, 0, 255, 0.3), 0 0 40px rgba(0, 136, 255, 0.1);
+  --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+
+  /* next/font (layout.tsx) exposes the real families via --font-inter /
+     --font-space-grotesk. Referencing them here (instead of literal names)
+     is what makes the loaded fonts actually render. */
+  --font-main: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: var(--font-space-grotesk), 'Space Grotesk', sans-serif;
+  /* Visual Genome (DNA) Palette - Aligned with Cosmic Luxury */
+  --dna-primary: var(--accent-secondary);
+  /* Azure */
+  --dna-secondary: var(--accent-primary);
+  /* Magenta */
+  --dna-cta: var(--accent-gold);
+  /* Gold */
+  --dna-bg: var(--bg-deep);
+  --dna-text: var(--text-primary);
+
+  --font-dna-heading: var(--font-heading);
+  --font-dna-body: var(--font-main);
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  line-height: 1.7;
+  font-feature-settings: "ss01", "ss02", "cv01";
+  /* Modern font features */
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+::selection {
+  background: var(--accent-secondary);
+  color: white;
+}
+
+/* Typography Overhaul */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: 3.5rem;
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+}
+
+h3 {
+  font-size: 1.75rem;
+  line-height: 1.3;
+}
+
+p {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Premium Components */
+
+.container {
+  max-width: 1400px;
+  /* Wider canvas for premium feel */
+  margin: 0 auto;
+  padding: 0 2rem;
+  position: relative;
+  z-index: 10;
+}
+
+.glass {
+  background: var(--glass-base);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  border-radius: 24px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+  position: relative;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gradient-glass);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Only highlight border/shadow on glass hover — NO movement */
+.glass:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Opt-in hover lift for interactive cards */
+.glass-hover {
+  transition: transform 0.3s ease-out, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-hover:hover {
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: var(--shadow-neon), var(--shadow-card);
+}
+
+.text-gradient {
+  background: var(--gradient-aurora);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.btn-primary {
+  background: var(--gradient-aurora);
+  background-size: 200% 200%;
+  color: white;
+  padding: 1rem 2.5rem;
+  border-radius: 100px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(217, 0, 255, 0.4);
+  transition: all 0.3s ease;
+  animation: shimmer 3s infinite linear;
+  position: relative;
+  overflow: hidden;
+  transform: translateZ(0);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0, 136, 255, 0.6);
+  background-position: 100% 0;
+}
+
+.input-field {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 1rem 1.5rem;
+  color: white;
+  font-family: var(--font-main);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--accent-secondary);
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 4px rgba(0, 136, 255, 0.15);
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% {
+    background-position: 0% 50%
+  }
+
+  50% {
+    background-position: 100% 50%
+  }
+
+  100% {
+    background-position: 0% 50%
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+/* Animation stagger helpers (complement Tailwind's transition delay-*) */
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2d2d44;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-secondary);
+}
+
+/* Opt-in accent scrollbar for internal scroll areas (lists, chat, pickers) */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--accent-secondary);
+  border-radius: 8px;
+}
+
+/* Starfield Background Layer - Global */
+.bg-stars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background: radial-gradient(circle at 50% 10%, #1a1a2e 0%, #050511 80%);
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* Starfield Local (for Cards) */
+.bg-stars-local {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  background: radial-gradient(circle at 50% 50%, #202040 0%, transparent 70%);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* Starfield Noise/Texture - Optimized */
+.bg-noise {
+  /* Using a simpler noise pattern or just low opacity texture to reduce GPU load */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+  transform: translateZ(0);
+  /* Force layer to avoid repaint flickers */
+}
+
+/* Utility for layout */
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+/* Aurora Mesh Gradient — animated background effect */
+.aurora-mesh {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(199, 125, 255, 0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 70% 60%, rgba(0, 180, 216, 0.1) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 50% 30%, rgba(217, 0, 255, 0.08) 0%, transparent 60%);
+  background-size: 200% 200%;
+  animation: auroraMesh 12s ease-in-out infinite alternate;
+}
+
+@keyframes auroraMesh {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 50% 100%;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-mesh {
+    animation: none;
+  }
+
+  .animate-pulse-slow {
+    animation: none;
+    opacity: 0.6;
+  }
+
+  .animate-float,
+  .animate-fade,
+  .animate-fade-in,
+  .animate-fade-in-up {
+    animation: none;
+  }
+
+  .btn-primary {
+    animation: none;
+  }
+}
+/* ============ HOLA UNIVERSO HERO (landing) ============ */
+@keyframes al-cursorblink {
+    0%, 60% { opacity: 1; }
+    61%, 100% { opacity: 0; }
+}
+
+@keyframes al-twinkle {
+    0%, 100% { opacity: 0.2; }
+    50% { opacity: 0.9; }
+}
+
+/* ============ CONTROLES NATIVOS DEL NAVEGADOR (Cosmic Luxury) ============ */
+/* El navegador renderiza spinners, calendarios, autofill y scrollbars con su
+   tema claro por defecto — acá se alinean todos a la identidad oscura. */
+
+:root {
+    /* Formularios y widgets nativos (date/time pickers, selects) en oscuro */
+    color-scheme: dark;
+}
+
+/* Inputs numéricos: sin spinners nativos (flechas grises sobre caja blanca).
+   Se escribe el número directamente; los steppers del sistema no aportan. */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+}
+
+input[type='number'] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* Autofill de Chrome/Safari: fondo amarillo/blanco fuera de paleta */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+    -webkit-text-fill-color: var(--text-primary, #e9e7f4);
+    -webkit-box-shadow: 0 0 0 1000px #12122a inset;
+    box-shadow: 0 0 0 1000px #12122a inset;
+    caret-color: var(--accent-secondary);
+    transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Scrollbars globales finos en paleta (WebKit + Firefox) */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(157, 78, 221, 0.45) transparent;
+}
+
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgba(157, 78, 221, 0.45);
+    border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: rgba(199, 125, 255, 0.65);
+}
+
+/* Indicadores nativos de date/time (por si se usan a futuro) */
+input[type='date']::-webkit-calendar-picker-indicator,
+input[type='time']::-webkit-calendar-picker-indicator {
+    filter: invert(0.8) sepia(1) saturate(3) hue-rotate(230deg);
+    cursor: pointer;
+}

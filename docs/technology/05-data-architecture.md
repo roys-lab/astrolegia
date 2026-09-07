@@ -145,3 +145,26 @@ PostgreSQL ofrece un rendimiento excepcional para el volumen de Astrolegia media
 - Todas las modificaciones de esquema se declaran en el archivo `packages/database/prisma/schema.prisma`.
 - El despliegue de migraciones en entornos de staging y producción se ejecuta de forma automatizada en el pipeline de CI/CD mediante `prisma migrate deploy`.
 - Las mutaciones destructivas de tablas requieren aprobación explícita en revisión de código.
+
+---
+
+## Actualización 2026-09-07 — esquema implementado en `packages/database`
+
+El esquema real (`prisma/schema.prisma`, migraciones versionadas en
+`prisma/migrations/`) extiende el modelo lógico de arriba:
+
+- **Better Auth:** `User` suma `emailVerified` e `image`; `Session` suma
+  `userAgent` y `updatedAt`; `Account` suma los tokens del proveedor; se agrega
+  el modelo `Verification`. Nombres exactos del adapter de Prisma (doc 08).
+- **`NatalProfile`:** `birthDate` es `date` (sin hora ni zona); `birthTime` es
+  opcional ("HH:MM" local) con `birthTimeKnown`; lugar opcional (`city`,
+  `country`, `latitude`, `longitude`, `timezone`); `tags`, `notes`, `isSelf`
+  (perfil del propio usuario, uno por usuario), `source` (`manual` |
+  `imported`) y `legacyRefs` (origen en Firestore cuando es importado).
+- **`ChartCalculation`:** una fila por perfil y `type` (`natal`, `numerology`,
+  `humanDesign`, `mayanKin`), con `engineVersion`, `inputHash` (djb2 de los
+  datos de nacimiento) y `payload` completo del motor; `planetaryPositions`,
+  `houseCusps`, `planetaryAspects` y `ascendantSign` pasan a ser derivados
+  opcionales. Si cambian el motor o los datos, la API marca la carta como
+  `stale-engine` / `stale-data`.
+- Migraciones: `pnpm db:migrate` en local, `prisma migrate deploy` en Railway.

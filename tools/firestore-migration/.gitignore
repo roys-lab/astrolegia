@@ -1,0 +1,6 @@
+# Exports de Firestore (datos personales, pueden pesar varios MB)
+exports/
+# Service accounts de Firebase: nunca al repo
+*.json
+!package.json
+!tsconfig.json
