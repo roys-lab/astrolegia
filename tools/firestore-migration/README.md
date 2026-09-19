@@ -11,27 +11,30 @@ Astrolegia v1 (Firestore) al modelo de PostgreSQL (`NatalProfile` +
 
 ## 1. Exportar desde Firestore
 
-Necesitás una service account del proyecto de Firebase (Firebase Console →
-Configuración del proyecto → Cuentas de servicio → Generar nueva clave privada)
-y el `uid` de Firebase Auth del usuario (Authentication → Users).
+Colocá el archivo de la service account (`serviceAccount.json`) en `tools/firestore-migration/serviceAccount.json` (o definí `GOOGLE_APPLICATION_CREDENTIALS`).
 
+Para exportar **todos los usuarios** de una sola vez:
 ```bash
-GOOGLE_APPLICATION_CREDENTIALS=C:/ruta/serviceAccount.json FIRESTORE_UID=<uid> pnpm --filter @astrolegia/firestore-migration export
+pnpm db:firestore:export
 ```
 
-Genera `tools/firestore-migration/exports/<uid>.json` con el perfil
-(`users/{uid}` + `profile/main`), la carta propia (`charts/natal`) y todas las
-personas (`people/*`) con sus cartas (`people/*/charts/*`). El archivo puede
-pesar varios MB (los SVG de las cartas). La carpeta `exports/` está gitignoreada.
+O para exportar un usuario específico:
+```bash
+FIRESTORE_UID=<uid> pnpm db:firestore:export
+```
+
+Genera los archivos JSON en `tools/firestore-migration/exports/<uid>.json` con el perfil propio, la carta propia y todas las personas con sus cartas cacheadas.
 
 ## 2. Importar a PostgreSQL
 
-Con `DATABASE_URL` apuntando a la base destino (local o Railway) y el usuario ya
-creado en `User` (el seed lo crea para los super admins; cualquier otro entra
-con Google una vez):
-
+Para importar **todas las exportaciones** a PostgreSQL automáticamente:
 ```bash
-DATABASE_URL=postgresql://... IMPORT_EMAIL=santos.dlc@gmail.com IMPORT_FILE=exports/<uid>.json pnpm --filter @astrolegia/firestore-migration import
+pnpm db:firestore:import
+```
+
+O para importar un archivo específico para un usuario concreto:
+```bash
+IMPORT_EMAIL=roy@royslab.com IMPORT_FILE=exports/<uid>.json pnpm db:firestore:import
 ```
 
 Reglas:

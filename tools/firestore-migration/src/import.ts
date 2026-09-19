@@ -6,7 +6,7 @@
  * Idempotente: dedupe por nombre normalizado + fecha (como v1). Nunca borra nada.
  */
 import 'dotenv/config';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { prisma, Prisma, type ChartType } from '@astrolegia/database';
 import { birthDateKeyOf, normalizeFullName } from '@astrolegia/core/people';
@@ -148,14 +148,24 @@ async function upsertChart(profileId: string, chart: ChartInput) {
     });
 }
 
-async function main() {
-    const email = process.env.IMPORT_EMAIL;
-    const file = process.env.IMPORT_FILE;
-    if (!email || !file) throw new Error('Faltan IMPORT_EMAIL y/o IMPORT_FILE');
+async function importUserData(data: FirestoreExport, targetEmail?: string) {
+    const email = targetEmail || data.email || (data.root?.email as string) || (data.profileMain?.email as string) || null;
+    if (!email) {
+        throw new Error(`No se pudo determinar el email para el export de UID ${data.uid}. Pasa IMPORT_EMAIL=...`);
+    }
 
-    const data = JSON.parse(readFileSync(path.resolve(process.cwd(), file), 'utf8')) as FirestoreExport;
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) throw new Error(`No existe el User ${email} en PostgreSQL: corré el seed o entrá una vez con Google`);
+    let user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+        const name = (data.displayName || data.root?.displayName || data.profileMain?.displayName || 'Usuario Migrado') as string;
+        console.log(`Usuario ${email} no existía en PostgreSQL. Creándolo con rol 'user'...`);
+        user = await prisma.user.create({
+            data: {
+                email,
+                name,
+                role: 'user',
+            },
+        });
+    }
 
     const existing = await prisma.natalProfile.findMany({ where: { userId: user.id } });
     const seen = new Map(existing.map((p) => [`${normalizeFullName(p.name)}|${p.birthDate.toISOString().slice(0, 10)}`, p.id]));
@@ -199,7 +209,7 @@ async function main() {
     for (const person of data.people) {
         const input = personToProfile(data.uid, person.id, person.data);
         if (!input) {
-            console.warn(`Persona ${person.id} omitida: sin nombre o fecha válida`);
+            console.warn(`  Persona ${person.id} omitida: sin nombre o fecha válida`);
             skipped++;
             continue;
         }
@@ -209,7 +219,46 @@ async function main() {
         await importProfile(input, chartInputs);
     }
 
-    console.log(`Import terminado para ${email}: ${created} perfiles creados, ${skipped} omitidos (ya existían), ${charts} cartas guardadas.`);
+    console.log(`✓ Import terminado para ${email} (UID: ${data.uid}): ${created} perfiles creados, ${skipped} omitidos (ya existían), ${charts} cartas guardadas.`);
+}
+
+async function main() {
+    const singleFile = process.env.IMPORT_FILE;
+    const singleEmail = process.env.IMPORT_EMAIL;
+
+    if (singleFile) {
+        const resolved = path.resolve(process.cwd(), singleFile);
+        console.log(`Importando archivo único: ${resolved}...`);
+        const data = JSON.parse(readFileSync(resolved, 'utf8')) as FirestoreExport;
+        await importUserData(data, singleEmail);
+    } else {
+        const exportsDir = path.resolve(process.cwd(), 'exports');
+        if (!existsSync(exportsDir)) {
+            throw new Error(
+                `No se encontró el directorio de exportaciones ${exportsDir}.\n` +
+                `Ejecuta primero: pnpm --filter @astrolegia/firestore-migration export\n` +
+                `o define IMPORT_FILE=ruta/al/archivo.json`
+            );
+        }
+
+        const files = readdirSync(exportsDir).filter((f) => f.endsWith('.json') && f !== 'all_users.json');
+        if (files.length === 0) {
+            console.warn(`No hay archivos JSON en ${exportsDir}.`);
+            return;
+        }
+
+        console.log(`Procesando ${files.length} archivo(s) de exportación desde ${exportsDir}...`);
+        for (const f of files) {
+            const filePath = path.join(exportsDir, f);
+            try {
+                const data = JSON.parse(readFileSync(filePath, 'utf8')) as FirestoreExport;
+                await importUserData(data, singleEmail);
+            } catch (err) {
+                console.error(`Error procesando ${filePath}:`, err instanceof Error ? err.message : String(err));
+            }
+        }
+    }
+
     await prisma.$disconnect();
 }
 

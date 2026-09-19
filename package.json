@@ -13,6 +13,8 @@
     "db:migrate": "pnpm --filter @astrolegia/database migrate",
     "db:migrate:deploy": "pnpm --filter @astrolegia/database migrate:deploy",
     "db:seed": "pnpm --filter @astrolegia/database seed",
+    "db:firestore:export": "pnpm --filter @astrolegia/firestore-migration export",
+    "db:firestore:import": "pnpm --filter @astrolegia/firestore-migration import",
     "test": "turbo run test"
   },
   "devDependencies": {
