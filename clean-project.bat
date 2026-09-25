@@ -1,7 +1,7 @@
 @echo off
 title Astrolegia — Limpieza, Build y Seed
 echo ========================================================
-echo   Astrolegia: Install, Build, Migrate, Reset DB y Seed
+echo   Astrolegia: Install, Generate, Build, Migrate (reset) y Seed
 echo ========================================================
 echo.
 
@@ -39,8 +39,8 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo [4/5] Reseteando y aplicando esquema en PostgreSQL...
-call %PKG_MGR% --filter @astrolegia/database push --force-reset
+echo [4/5] Reseteando la base y aplicando las migraciones versionadas (prisma/migrations)...
+call %PKG_MGR% --filter @astrolegia/database migrate:reset
 if %ERRORLEVEL% NEQ 0 (
     echo Error al aplicar esquema en la base de datos.
     pause

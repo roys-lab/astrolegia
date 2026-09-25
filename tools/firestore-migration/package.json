@@ -1,0 +1,23 @@
+{
+  "name": "@astrolegia/firestore-migration",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Migración de una sola corrida de los datos de Astrolegia v1 (Firestore) a PostgreSQL: export con firebase-admin e import con Prisma.",
+  "scripts": {
+    "export": "tsx src/export.ts",
+    "import": "tsx src/import.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@astrolegia/core": "workspace:*",
+    "@astrolegia/database": "workspace:*",
+    "firebase-admin": "^13.0.0"
+  },
+  "devDependencies": {
+    "@astrolegia/tsconfig": "workspace:*",
+    "@types/node": "^22.13.5",
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.3",
+    "typescript": "^5.7.3"
+  }
+}

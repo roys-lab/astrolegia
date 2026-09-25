@@ -24,3 +24,9 @@ Para nuevas decisiones puntuales que requieran debate, plantearlas en esta carpe
 - **Deprecated**: Decisión que dejó de aplicar al proyecto.
 - **Superseded**: Reemplazado por un ADR posterior.
 - **Rejected**: Considerado pero descartado explícitamente.
+
+## Índice de ADRs
+
+| ADR | Título | Estado |
+|---|---|---|
+| [0001](./0001-migracion-astrolegia-v1.md) | Migración de Astrolegia v1 (Next.js + Firebase) al monorepo | Proposed |

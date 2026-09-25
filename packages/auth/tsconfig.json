@@ -1,0 +1,8 @@
+{
+  "extends": "@astrolegia/tsconfig/base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*"]
+}

@@ -26,6 +26,12 @@ if %ERRORLEVEL% EQU 0 (
     set PORT_BUSY=1
 )
 
+netstat -ano | findstr ":3003" | findstr "LISTENING" >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo [ERROR FATAL] El puerto 3003 - Web Next.js ya esta ocupado por otra aplicacion.
+    set PORT_BUSY=1
+)
+
 netstat -ano | findstr ":8081" | findstr "LISTENING" >nul 2>&1
 if %ERRORLEVEL% EQU 0 (
     echo [ERROR FATAL] El puerto 8081 - Expo Go Metro ya esta ocupado por otra aplicacion.
@@ -43,7 +49,7 @@ if %PORT_BUSY% EQU 1 (
     exit /b 1
 )
 
-echo [OK] Puertos 3000, 3001, 3002 y 8081 disponibles.
+echo [OK] Puertos 3000, 3001, 3002, 3003 y 8081 disponibles.
 echo.
 
 where pnpm >nul 2>nul
@@ -53,25 +59,29 @@ if %ERRORLEVEL% NEQ 0 (
     set PKG_MGR=pnpm
 )
 
-echo [1/4] Levantando API Backend en http://localhost:3000 ...
+echo [1/5] Levantando API Backend en http://localhost:3000 ...
 start "Astrolegia API (:3000)" cmd /k "cd apps\api && %PKG_MGR% dev"
 
-echo [2/4] Levantando Admin Web en http://localhost:3001 ...
+echo [2/5] Levantando Admin Web en http://localhost:3001 ...
 start "Astrolegia Admin Web (:3001)" cmd /k "cd apps\admin && %PKG_MGR% dev"
 
-echo [3/4] Levantando Client Web en http://localhost:3002 ...
+echo [3/5] Levantando Client Web en http://localhost:3002 ...
 start "Astrolegia Client Web (:3002)" cmd /k "cd apps\client && %PKG_MGR% web"
 
-echo [4/4] Levantando Expo Go con QR en puerto 8081 ...
+echo [4/5] Levantando Expo Go con QR en puerto 8081 ...
 start "Astrolegia Expo Go (:8081 QR)" cmd /k "cd apps\client && %PKG_MGR% start"
+
+echo [5/5] Levantando Web Next.js en http://localhost:3003 ...
+start "Astrolegia Web (:3003)" cmd /k "cd apps\web && %PKG_MGR% dev"
 
 echo.
 echo ========================================================
-echo   Los 4 servicios se estan ejecutando en simultaneo:
+echo   Los 5 servicios se estan ejecutando en simultaneo:
 echo   - 1. Backend API:     http://localhost:3000
 echo   - 2. Admin Web:       http://localhost:3001
 echo   - 3. Client Web:      http://localhost:3002
 echo   - 4. Expo Go (QR):    http://localhost:8081
+echo   - 5. Web Next.js:     http://localhost:3003
 echo ========================================================
 echo.
 pause

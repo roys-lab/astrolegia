@@ -10,7 +10,12 @@
     "clean": "turbo run clean",
     "db:generate": "pnpm --filter @astrolegia/database generate",
     "db:push": "pnpm --filter @astrolegia/database push",
-    "db:seed": "pnpm --filter @astrolegia/database seed"
+    "db:migrate": "pnpm --filter @astrolegia/database migrate",
+    "db:migrate:deploy": "pnpm --filter @astrolegia/database migrate:deploy",
+    "db:seed": "pnpm --filter @astrolegia/database seed",
+    "db:firestore:export": "pnpm --filter @astrolegia/firestore-migration export",
+    "db:firestore:import": "pnpm --filter @astrolegia/firestore-migration import",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "turbo": "^2.4.4",

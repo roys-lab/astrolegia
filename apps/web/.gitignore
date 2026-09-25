@@ -1,0 +1,6 @@
+# Lo general (node_modules, .next, .env*, *.tsbuildinfo, coverage) lo cubre
+# el .gitignore de la raíz del monorepo. Acá solo lo específico de Next.
+next-env.d.ts
+
+# Base de conocimiento del RAG (11 MB, regenerable con build:knowledge en v1)
+src/data/knowledge-base.json
